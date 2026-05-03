@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Sign Predictor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+        :root {
+            --bg-ink: #081321;
+            --bg-mid: #0f2236;
+            --surface: rgba(10, 29, 47, 0.78);
+            --surface-strong: rgba(9, 26, 42, 0.94);
+            --line: rgba(128, 196, 255, 0.32);
+            --text-main: #f0f7ff;
+            --text-muted: #acc5dc;
+            --accent: #2bd6c4;
+            --accent-strong: #13b8a6;
+            --warning: #ff7a59;
+            --shadow: 0 18px 55px rgba(0, 0, 0, 0.34);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text-main);
+            font-family: 'Manrope', 'Segoe UI', Tahoma, sans-serif;
+            background:
+                radial-gradient(circle at 12% 18%, rgba(43, 214, 196, 0.16), transparent 34%),
+                radial-gradient(circle at 90% 82%, rgba(255, 122, 89, 0.15), transparent 36%),
+                linear-gradient(135deg, var(--bg-ink) 0%, var(--bg-mid) 52%, #091a2b 100%);
+            display: grid;
+            place-items: center;
+            padding: 28px;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(rgba(200, 225, 255, 0.04) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(200, 225, 255, 0.04) 1px, transparent 1px);
+            background-size: 34px 34px;
+            mask-image: radial-gradient(circle at center, black 45%, transparent 92%);
+        }
+
+        .shell {
+            width: min(930px, 100%);
+            position: relative;
+            z-index: 1;
+            animation: lift-in 520ms ease-out both;
+        }
+
+        .hero {
+            margin-bottom: 16px;
+        }
+
+        .kicker {
+            margin: 0;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent);
+            font-size: 0.74rem;
+            font-weight: 700;
+        }
+
+        h1 {
+            margin: 8px 0 6px;
+            font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+            font-size: clamp(1.8rem, 4vw, 2.7rem);
+            line-height: 1.1;
+            text-wrap: balance;
+        }
+
+        .subtitle {
+            margin: 0;
+            max-width: 66ch;
+            color: var(--text-muted);
+            font-size: 1.01rem;
+        }
+
+        .panel {
+            background: linear-gradient(170deg, var(--surface) 0%, var(--surface-strong) 100%);
+            border: 1px solid var(--line);
+            border-radius: 22px;
+            padding: clamp(16px, 3vw, 28px);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(8px);
+        }
+
+        #drop-zone {
+            border: 2px dashed rgba(140, 213, 255, 0.45);
+            border-radius: 16px;
+            padding: clamp(34px, 8vw, 64px);
+            text-align: center;
+            color: var(--text-muted);
+            background: rgba(8, 22, 36, 0.42);
+            cursor: pointer;
+            transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease, color 180ms ease;
+            outline: none;
+            user-select: none;
+        }
+
+        #drop-zone strong {
+            display: block;
+            color: var(--text-main);
+            font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+            font-size: clamp(1.12rem, 3vw, 1.5rem);
+            margin-bottom: 8px;
+        }
+
+        #drop-zone span {
+            font-size: 0.95rem;
+            letter-spacing: 0.01em;
+        }
+
+        #drop-zone.hover,
+        #drop-zone:focus-visible {
+            border-color: var(--accent);
+            background: rgba(14, 43, 63, 0.65);
+            color: #d9f2ff;
+            transform: translateY(-2px);
+        }
+
+        #result {
+            margin-top: 18px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .result-item {
+            margin: 0;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(95, 179, 236, 0.32);
+            background: rgba(8, 25, 39, 0.76);
+            color: #d8ecff;
+            font-size: 0.95rem;
+            animation: fade-up 320ms ease both;
+        }
+
+        .result-item.success {
+            border-left: 4px solid var(--accent-strong);
+        }
+
+        .result-item.error {
+            border-left: 4px solid var(--warning);
+            color: #ffd9cf;
+        }
+
+        @keyframes fade-up {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes lift-in {
+            from {
+                opacity: 0;
+                transform: translateY(14px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 16px;
+            }
+
+            .panel {
+                border-radius: 16px;
+            }
+
+            #drop-zone {
+                border-radius: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="shell">
+        <header class="hero">
+            <p class="kicker">Traffic Sign Intelligence</p>
+            <h1>Upload Traffic Sign Images or MP4 Video</h1>
+            <p class="subtitle">Drop images for single predictions, or upload an MP4 to get timestamped traffic-sign detections.</p>
+        </header>
+
+        <section class="panel">
+            <div id="drop-zone" tabindex="0" role="button" aria-label="Upload traffic sign images">
+                <strong>Drop images or MP4 video here</strong>
+                <span>or click to select files from your device</span>
+            </div>
+            <input type="file" id="file-input" accept="image/*,video/mp4,.mp4" multiple style="display:none" />
+            <div id="result" aria-live="polite"></div>
+        </section>
+    </main>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const result = document.getElementById('result');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('hover'); });
+        dropZone.addEventListener('dragleave', e => { dropZone.classList.remove('hover'); });
+        dropZone.addEventListener('drop', async e => {
+            e.preventDefault();
+            dropZone.classList.remove('hover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+        async function handleFiles(files) {
+            result.innerHTML = '';
+            for (let file of files) {
+                const form = new FormData();
+                form.append('file', file);
+                const resp = await fetch('/predict', { method:'POST', body: form });
+                const data = await resp.json();
+                if (data.error) {
+                    const p = document.createElement('p');
+                    p.classList.add('result-item', 'error');
+                    p.textContent = `${file.name}: error – ${data.error}`;
+                    result.appendChild(p);
+                    continue;
+                }
+
+                if (data.file_type === 'video') {
+                    const header = document.createElement('p');
+                    header.classList.add('result-item', 'success');
+                    header.textContent = `${file.name} → ${data.total_detections} detections`;
+                    result.appendChild(header);
+
+                    if (!data.detections || data.detections.length === 0) {
+                        const none = document.createElement('p');
+                        none.classList.add('result-item');
+                        none.textContent = 'No traffic signs detected in sampled frames.';
+                        result.appendChild(none);
+                        continue;
+                    }
+
+                    for (const det of data.detections) {
+                        const row = document.createElement('p');
+                        row.classList.add('result-item');
+                        row.textContent = `${det.timestamp.toFixed(2)}s → class ${det.class_id}: ${det.label} (conf ${det.confidence})`;
+                        result.appendChild(row);
+                    }
+                    continue;
+                }
+
+                const p = document.createElement('p');
+                p.classList.add('result-item');
+                if (data.error) {
+                    p.classList.add('error');
+                    p.textContent = `${file.name}: error – ${data.error}`;
+                } else {
+                    p.classList.add('success');
+                    p.textContent = `${file.name} → class ${data.class_id}: ${data.label} (conf ${data.confidence})`;
+                }
+                result.appendChild(p);
+            }
+        }
+    </script>
+</body>
+</html>
